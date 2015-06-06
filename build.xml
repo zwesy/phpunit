@@ -318,6 +318,14 @@
    </fileset>
   </copy>
 
+  <copy file="${basedir}/vendor/symfony/process/LICENSE" tofile="${basedir}/build/phar/symfony-process/LICENSE"/>
+  <copy todir="${basedir}/build/phar/symfony-process">
+   <fileset dir="${basedir}/vendor/symfony/process">
+    <include name="**/*.php" />
+    <exclude name="**/Tests/**" />
+   </fileset>
+  </copy>
+
   <copy file="${basedir}/vendor/symfony/yaml/LICENSE" tofile="${basedir}/build/phar/symfony-yaml/LICENSE"/>
   <copy todir="${basedir}/build/phar/symfony-yaml">
    <fileset dir="${basedir}/vendor/symfony/yaml">
