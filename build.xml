@@ -318,9 +318,9 @@
    </fileset>
   </copy>
 
-  <copy file="${basedir}/vendor/symfony/yaml/LICENSE" tofile="${basedir}/build/phar/symfony/LICENSE"/>
-  <copy todir="${basedir}/build/phar/symfony">
-   <fileset dir="${basedir}/vendor/symfony">
+  <copy file="${basedir}/vendor/symfony/yaml/LICENSE" tofile="${basedir}/build/phar/symfony-yaml/LICENSE"/>
+  <copy todir="${basedir}/build/phar/symfony-yaml">
+   <fileset dir="${basedir}/vendor/symfony/yaml">
     <include name="**/*.php" />
     <exclude name="**/Tests/**" />
    </fileset>
