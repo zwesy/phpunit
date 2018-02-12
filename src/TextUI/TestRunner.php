@@ -18,11 +18,14 @@ use PHPUnit\Framework\Test;
 use PHPUnit\Framework\TestListener;
 use PHPUnit\Framework\TestResult;
 use PHPUnit\Framework\TestSuite;
+use PHPUnit\Runner\AfterLastTestHook;
 use PHPUnit\Runner\BaseTestRunner;
+use PHPUnit\Runner\BeforeFirstTestHook;
 use PHPUnit\Runner\Filter\ExcludeGroupFilterIterator;
 use PHPUnit\Runner\Filter\Factory;
 use PHPUnit\Runner\Filter\IncludeGroupFilterIterator;
 use PHPUnit\Runner\Filter\NameFilterIterator;
+use PHPUnit\Runner\Hook;
 use PHPUnit\Runner\StandardTestSuiteLoader;
 use PHPUnit\Runner\TestSuiteLoader;
 use PHPUnit\Runner\Version;
@@ -85,6 +88,11 @@ class TestRunner extends BaseTestRunner
      * @var bool
      */
     private $messagePrinted = false;
+
+    /**
+     * @var Hook[]
+     */
+    private $extensions = [];
 
     /**
      * @param TestSuiteLoader    $loader
@@ -505,7 +513,19 @@ class TestRunner extends BaseTestRunner
             $suite->setRunTestInSeparateProcess($arguments['processIsolation']);
         }
 
+        foreach ($this->extensions as $extension) {
+            if ($extension instanceof BeforeFirstTestHook) {
+                $extension->executeBeforeFirstTest();
+            }
+        }
+
         $suite->run($result);
+
+        foreach ($this->extensions as $extension) {
+            if ($extension instanceof AfterLastTestHook) {
+                $extension->executeAfterLastTest();
+            }
+        }
 
         $result->flushListeners();
 
@@ -890,6 +910,34 @@ class TestRunner extends BaseTestRunner
 
             if (!empty($groupConfiguration['exclude']) && !isset($arguments['excludeGroups'])) {
                 $arguments['excludeGroups'] = \array_diff($groupConfiguration['exclude'], $groupCliArgs);
+            }
+
+            foreach ($arguments['configuration']->getExtensionConfiguration() as $extension) {
+                if (!\class_exists($extension['class'], false) && $extension['file'] !== '') {
+                    require_once $extension['file'];
+                }
+
+                if (!\class_exists($extension['class'])) {
+                    throw new Exception(
+                        \sprintf(
+                            'Class "%s" does not exist',
+                            $extension['class']
+                        )
+                    );
+                }
+
+                $extensionClass = new ReflectionClass($extension['class']);
+
+                if (!$extensionClass->implementsInterface(Hook::class)) {
+                    throw new Exception(
+                        \sprintf(
+                            'Class "%s" does not implement a PHPUnit\Runner\Hook interface',
+                            $extension['class']
+                        )
+                    );
+                }
+
+                $this->extensions[] = $extensionClass->newInstance();
             }
 
             foreach ($arguments['configuration']->getListenerConfiguration() as $listener) {
